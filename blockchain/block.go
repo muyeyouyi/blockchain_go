@@ -15,6 +15,7 @@ type Block struct {
 	PreBlockHash []byte	//上一个区块哈希值
 	Hash []byte	//当前区块哈希值
 	Data []byte	//本区块信息
+	nonce int //随机值
 }
 
 /**
@@ -32,7 +33,10 @@ func (b *Block)setHash(){
  */
 func NewBlock(data string, prevBlockHash []byte) *Block {
 	timestamp := time.Now().Unix()
-	block := &Block{timestamp, prevBlockHash, []byte{}, []byte(data)}
-	block.setHash()
+	block := &Block{timestamp, prevBlockHash, []byte{}, []byte(data),0}
+	pow := NewPow(block)
+	nonce, hash := pow.Run()
+	block.Hash = hash[:]
+	block.nonce = nonce
 	return block
 }
