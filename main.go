@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"./blockchain"
+	"strconv"
 )
 
 func main() {
@@ -17,8 +18,10 @@ func testBc() {
 		fmt.Printf("Data：%s\n", block.Data)
 		fmt.Println("Timestamp：", block.Timestamp)
 		fmt.Printf("Hash：%x\n", block.Hash)
-		fmt.Printf("PreBlockHash：%x\n\n", block.PreBlockHash)
-
+		fmt.Printf("PreBlockHash：%x\n", block.PreBlockHash)
+		pow := blockchain.NewPow(block)
+		fmt.Printf("pow:%s\n",strconv.FormatBool(pow.Validate()))
+		fmt.Println()
 	}
 }
 
