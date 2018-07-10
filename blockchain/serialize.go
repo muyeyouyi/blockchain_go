@@ -1,7 +1,6 @@
-package utils
+package blockchain
 
 import (
-	"../blockchain"
 	"bytes"
 	"encoding/gob"
 )
@@ -9,7 +8,7 @@ import (
 /**
 	序列化
  */
-func Serialize(block *blockchain.Block) []byte {
+func Serialize(block *Block) []byte {
 	var result bytes.Buffer
 	encoder := gob.NewEncoder(&result)
 	encoder.Encode(block)
@@ -19,8 +18,8 @@ func Serialize(block *blockchain.Block) []byte {
 /**
 	反序列化
  */
-func Deserialize(serialize []byte) *blockchain.Block {
-	var block blockchain.Block
+func Deserialize(serialize []byte) *Block {
+	var block Block
 	decoder := gob.NewDecoder(bytes.NewReader(serialize))
 	decoder.Decode(&block)
 	return &block
