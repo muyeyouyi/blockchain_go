@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-const targetBits = 20 //目标难度的指数
+const targetBits = 21//目标难度的指数
 
 type ProofOfWork struct {
 	block  *Block
@@ -26,7 +26,7 @@ func (pow *ProofOfWork) PrepareData(nonce int) []byte {
 			pow.block.Data,
 			pow.block.PreBlockHash,
 			utils.IntToBytes(pow.block.Timestamp),
-			utils.IntToBytes(int64(nonce)),
+			utils.IntToBytes(int64(nonce)),//随机值
 		},
 		[]byte{'-'})
 	return data
