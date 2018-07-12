@@ -17,6 +17,15 @@ const dbFile = "./blockchain.db"  //数据库
 //}
 
 /**
+	迭代器
+ */
+func (bc *Chain) Iterator() *ChainIterator {
+	iterator := &ChainIterator{bc.Tip,bc.Db}
+	return iterator
+}
+
+
+/**
 	区块链-增加区块
  */
 func (bc *Chain) AddBlock(data string) {
@@ -24,7 +33,8 @@ func (bc *Chain) AddBlock(data string) {
 	var preHash []byte
 	err := bc.Db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBucket))
-		preHash = b.Get(bc.Tip)
+		block := Deserialize(b.Get(bc.Tip))
+		preHash = block.Hash
 		return nil
 	})
 	//创建新区块
