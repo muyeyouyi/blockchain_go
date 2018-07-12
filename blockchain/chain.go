@@ -2,13 +2,12 @@ package blockchain
 
 import (
 	"github.com/boltdb/bolt"
-	"fmt"
-	"os"
+	"../utils"
 )
 
 const blocksBucket = "blocks"      //表名
 var lastHash = []byte("last_hash") //最后一个块的hash值
-const dbFile = "../blockchain.db"  //数据库
+const dbFile = "./blockchain.db"  //数据库
 
 /**
 	创建区块链
@@ -32,14 +31,14 @@ func (bc *Chain) AddBlock(data string) {
 	newBlock := NewBlock(data, preHash)
 	//新区快写入数据库
 	bc.Db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket(lastHash)
+		b := tx.Bucket([]byte(blocksBucket))
 		b.Put(newBlock.Hash, Serialize(newBlock))
 		b.Put(lastHash, newBlock.Hash)
 		bc.Tip = newBlock.Hash
 		return nil
 	})
 
-	fmt.Println(err)
+	utils.LogE(err)
 
 	//preHash := bc.Blocks[len(bc.Blocks)-1].Hash//上个区块哈希值
 	//newBlock := NewBlock(data, preHash)//创建新区快
@@ -58,12 +57,10 @@ type Chain struct {
 	创建区块链
  */
 func NewBlockChain() *Chain {
+	utils.CreateFile(dbFile)
 	//打开数据库
 	var tip []byte
 	db, err := bolt.Open(dbFile, 0600, nil)
-	if err != nil {
-		os.Create(dbFile)
-	}
 	//数据库写入标准
 	err = db.Update(func(tx *bolt.Tx) error {
 		//检查表是否存在
@@ -82,7 +79,7 @@ func NewBlockChain() *Chain {
 		}
 		return nil
 	})
-	fmt.Println(err)
+	utils.LogE(err)
 
 	chain := Chain{tip, db}
 	return &chain

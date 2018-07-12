@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-const targetBits = 21//目标难度的指数
+const targetBits = 10//目标难度的指数
 
 type ProofOfWork struct {
 	block  *Block
