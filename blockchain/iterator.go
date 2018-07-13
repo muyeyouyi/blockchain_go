@@ -2,7 +2,7 @@ package blockchain
 
 import (
 	"github.com/boltdb/bolt"
-	"../constant"
+	"../constants"
 )
 
 /**

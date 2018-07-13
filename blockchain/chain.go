@@ -3,11 +3,11 @@ package blockchain
 import (
 	"github.com/boltdb/bolt"
 	"../utils"
+	"../constants"
 )
 
-const blocksBucket = "blocks"      //表名
 var lastHash = []byte("last_hash") //最后一个块的hash值
-const dbFile = "./blockchain.db"  //数据库
+
 
 /**
 	创建区块链
@@ -32,7 +32,7 @@ func (bc *Chain) AddBlock(data string) {
 	//数据库查询最后区块哈希值
 	var preHash []byte
 	err := bc.Db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(blocksBucket))
+		b := tx.Bucket([]byte(constants.BlocksBucket))
 		block := Deserialize(b.Get(bc.Tip))
 		preHash = block.Hash
 		return nil
@@ -41,7 +41,7 @@ func (bc *Chain) AddBlock(data string) {
 	newBlock := NewBlock(data, preHash)
 	//新区快写入数据库
 	bc.Db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(blocksBucket))
+		b := tx.Bucket([]byte(constants.BlocksBucket))
 		b.Put(newBlock.Hash, Serialize(newBlock))
 		b.Put(lastHash, newBlock.Hash)
 		bc.Tip = newBlock.Hash
@@ -67,17 +67,17 @@ type Chain struct {
 	创建区块链
  */
 func NewBlockChain() *Chain {
-	utils.CreateFile(dbFile)
+	utils.CreateFile(constants.DbFile)
 	//打开数据库
 	var tip []byte
-	db, err := bolt.Open(dbFile, 0600, nil)
+	db, err := bolt.Open(constants.DbFile, 0600, nil)
 	//数据库写入标准
 	err = db.Update(func(tx *bolt.Tx) error {
 		//检查表是否存在
-		b := tx.Bucket([]byte(blocksBucket))
+		b := tx.Bucket([]byte(constants.BlocksBucket))
 		//不存在，创建表
 		if b == nil {
-			b, err := tx.CreateBucket([]byte(blocksBucket))
+			b, err := tx.CreateBucket([]byte(constants.BlocksBucket))
 			block := NewGenesisBlock()
 			b.Put(block.Hash, Serialize(block))
 			b.Put(lastHash, block.Hash)
