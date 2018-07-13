@@ -6,8 +6,8 @@ import (
 )
 
 /**
-	序列化
- */
+序列化
+*/
 func Serialize(block *Block) []byte {
 	var result bytes.Buffer
 	encoder := gob.NewEncoder(&result)
@@ -16,8 +16,8 @@ func Serialize(block *Block) []byte {
 }
 
 /**
-	反序列化
- */
+反序列化
+*/
 func Deserialize(serialize []byte) *Block {
 	var block Block
 	decoder := gob.NewDecoder(bytes.NewReader(serialize))

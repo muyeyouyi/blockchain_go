@@ -1,33 +1,31 @@
 package blockchain
 
 import (
-	"github.com/boltdb/bolt"
-	"../utils"
 	"../constants"
+	"../utils"
+	"github.com/boltdb/bolt"
 )
 
 var lastHash = []byte("last_hash") //最后一个块的hash值
 
-
 /**
-	创建区块链
- */
+创建区块链
+*/
 //func CreateBlockChain() *Chain {
 //	return &Chain{[]*Block{NewGenesisBlock()}}
 //}
 
 /**
-	迭代器
- */
+迭代器
+*/
 func (bc *Chain) Iterator() *ChainIterator {
-	iterator := &ChainIterator{bc.Tip,bc.Db}
+	iterator := &ChainIterator{bc.Tip, bc.Db}
 	return iterator
 }
 
-
 /**
-	区块链-增加区块
- */
+区块链-增加区块
+*/
 func (bc *Chain) AddBlock(data string) {
 	//数据库查询最后区块哈希值
 	var preHash []byte
@@ -56,16 +54,16 @@ func (bc *Chain) AddBlock(data string) {
 }
 
 /**
-	区块链
- */
+区块链
+*/
 type Chain struct {
 	Tip []byte
 	Db  *bolt.DB
 }
 
 /**
-	创建区块链
- */
+创建区块链
+*/
 func NewBlockChain() *Chain {
 	utils.CreateFile(constants.DbFile)
 	//打开数据库

@@ -8,14 +8,14 @@ import (
 )
 
 /**
-	区块
- */
+区块
+*/
 type Block struct {
-	Timestamp int64 //时间戳
-	PreBlockHash []byte	//上一个区块哈希值
-	Hash []byte	//当前区块哈希值
-	Data []byte	//本区块信息
-	nonce int //随机值
+	Timestamp    int64  //时间戳
+	PreBlockHash []byte //上一个区块哈希值
+	Hash         []byte //当前区块哈希值
+	Data         []byte //本区块信息
+	nonce        int    //随机值
 }
 
 ///**
@@ -29,13 +29,13 @@ type Block struct {
 //
 //}
 /**
-	创建区块
- */
+创建区块
+*/
 func NewBlock(data string, prevBlockHash []byte) *Block {
 	//生成时间戳
 	timestamp := time.Now().Unix()
 	//创建区块
-	block := &Block{timestamp, prevBlockHash, []byte{}, []byte(data),0}
+	block := &Block{timestamp, prevBlockHash, []byte{}, []byte(data), 0}
 	pow := NewPow(block)
 	nonce, hash := pow.Run()
 	block.Hash = hash[:]
@@ -44,8 +44,8 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 }
 
 /**
-	创建创世区块
- */
+创建创世区块
+*/
 func NewGenesisBlock() *Block {
-	return NewBlock("我是创世0区块",[]byte{})
+	return NewBlock("我是创世0区块", []byte{})
 }
