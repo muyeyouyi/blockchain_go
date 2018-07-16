@@ -15,7 +15,7 @@ type Block struct {
 	PreBlockHash []byte //上一个区块哈希值
 	Hash         []byte //当前区块哈希值
 	Data         []byte //本区块信息
-	nonce        int    //随机值
+	Nonce        int    //随机值
 }
 
 ///**
@@ -39,7 +39,8 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 	pow := NewPow(block)
 	nonce, hash := pow.Run()
 	block.Hash = hash[:]
-	block.nonce = nonce
+	block.Nonce = nonce
+	//block.nonce = 1051
 	return block
 }
 

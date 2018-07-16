@@ -1,8 +1,8 @@
 package blockchain
 
 import (
-	"../constants"
-	"../utils"
+	"constants"
+	"utils"
 	"github.com/boltdb/bolt"
 )
 

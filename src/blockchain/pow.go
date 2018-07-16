@@ -1,12 +1,12 @@
 package blockchain
 
 import (
-	"../utils"
-	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"math"
 	"math/big"
+	"bytes"
+	"utils"
 )
 
 const targetBits = 10 //目标难度的指数
@@ -65,7 +65,8 @@ func (pow *ProofOfWork) Run() (int, []byte) {
 
 func (pow *ProofOfWork) Validate() bool {
 	var hashInt big.Int
-	data := pow.PrepareData(pow.block.nonce)
+	nonce := pow.block.Nonce
+	data := pow.PrepareData(nonce)
 	hash := sha256.Sum256(data)
 	hashInt.SetBytes(hash[:])
 	isValid := hashInt.Cmp(pow.target) == -1
