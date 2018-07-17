@@ -8,9 +8,12 @@ import (
 )
 
 func main() {
-	fmt.Println("hello world")
-	//fmt.Println(os.Args)
-	run()
+	chain := blockchain.NewBlockChain()
+	defer chain.Db.Close()
+	cli := &blockchain.Cli{chain}
+	cli.Run()
+
+	//run()
 }
 func run() {
 	//创建区块链，生成4个区块
