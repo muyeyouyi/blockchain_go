@@ -6,7 +6,7 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-var lastHash = []byte("last_hash") //最后一个块的hash值
+
 
 /**
 创建区块链
@@ -41,7 +41,7 @@ func (bc *Chain) AddBlock(data string) {
 	bc.Db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(constants.BlocksBucket))
 		b.Put(newBlock.Hash, Serialize(newBlock))
-		b.Put(lastHash, newBlock.Hash)
+		b.Put(constants.LastHash, newBlock.Hash)
 		bc.Tip = newBlock.Hash
 		return nil
 	})
@@ -64,7 +64,7 @@ type Chain struct {
 /**
 创建区块链
 */
-func NewBlockChain() *Chain {
+func NewBlockChain(data string) *Chain {
 	utils.CreateFile(constants.DbFile)
 	//打开数据库
 	var tip []byte
@@ -76,14 +76,14 @@ func NewBlockChain() *Chain {
 		//不存在，创建表
 		if b == nil {
 			b, err := tx.CreateBucket([]byte(constants.BlocksBucket))
-			block := NewGenesisBlock()
+			block := NewGenesisBlock(data)
 			b.Put(block.Hash, Serialize(block))
-			b.Put(lastHash, block.Hash)
+			b.Put(constants.LastHash, block.Hash)
 			tip = block.Hash
 			return err
 			//存在，更新表
 		} else {
-			tip = b.Get(lastHash)
+			tip = b.Get(constants.LastHash)
 		}
 		return nil
 	})

@@ -47,6 +47,6 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
 /**
 创建创世区块
 */
-func NewGenesisBlock() *Block {
-	return NewBlock("我是创世0区块", []byte{})
+func NewGenesisBlock(data string) *Block {
+	return NewBlock(data, []byte{})
 }
