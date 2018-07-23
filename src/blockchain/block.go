@@ -1,21 +1,33 @@
 package blockchain
 
 import (
-	//"strconv"
-	//"bytes"
-	//"crypto/sha256"
 	"time"
+	"bytes"
+	"crypto/sha256"
 )
 
 /**
 区块
 */
 type Block struct {
-	Timestamp    int64  //时间戳
-	PreBlockHash []byte //上一个区块哈希值
-	Hash         []byte //当前区块哈希值
-	Data         []byte //本区块信息
-	Nonce        int    //随机值
+	Timestamp    int64          //时间戳
+	PreBlockHash []byte         //上一个区块哈希值
+	Hash         []byte         //当前区块哈希值
+	Transactions []*Transaction //本区块信息
+	Nonce        int            //随机值
+}
+
+/**
+	拼装tx的id，返回哈希
+ */
+func (block *Block) HashTransactions() []byte {
+	var txIds [][]byte
+	for _, tx := range block.Transactions {
+		txIds = append(txIds,tx.Id)
+	}
+	ids := bytes.Join(txIds, []byte{})
+	hash := sha256.Sum256(ids)
+	return hash[:]
 }
 
 ///**
@@ -31,22 +43,21 @@ type Block struct {
 /**
 创建区块
 */
-func NewBlock(data string, prevBlockHash []byte) *Block {
+func NewBlock(txs []*Transaction, prevBlockHash []byte) *Block {
 	//生成时间戳
 	timestamp := time.Now().Unix()
 	//创建区块
-	block := &Block{timestamp, prevBlockHash, []byte{}, []byte(data), 0}
+	block := &Block{timestamp, prevBlockHash, []byte{}, txs, 0}
 	pow := NewPow(block)
 	nonce, hash := pow.Run()
 	block.Hash = hash[:]
 	block.Nonce = nonce
-	//block.nonce = 1051
 	return block
 }
 
 /**
 创建创世区块
 */
-func NewGenesisBlock(data string) *Block {
-	return NewBlock(data, []byte{})
+func NewGenesisBlock(transaction *Transaction) *Block {
+	return NewBlock([]*Transaction{transaction}, []byte{})
 }

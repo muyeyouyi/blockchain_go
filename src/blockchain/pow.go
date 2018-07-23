@@ -23,7 +23,7 @@ func (pow *ProofOfWork) PrepareData(nonce int) []byte {
 	//拼接哈希数据
 	data := bytes.Join(
 		[][]byte{
-			pow.block.Data,
+			pow.block.HashTransactions(),
 			pow.block.PreBlockHash,
 			utils.IntToBytes(pow.block.Timestamp),
 			utils.IntToBytes(int64(nonce)), //随机值

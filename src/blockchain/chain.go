@@ -6,8 +6,6 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-
-
 /**
 创建区块链
 */
@@ -26,7 +24,7 @@ func (bc *Chain) Iterator() *ChainIterator {
 /**
 区块链-增加区块
 */
-func (bc *Chain) AddBlock(data string) {
+func (bc *Chain) AddBlock(txs []*Transaction) {
 	//数据库查询最后区块哈希值
 	var preHash []byte
 	err := bc.Db.View(func(tx *bolt.Tx) error {
@@ -36,7 +34,7 @@ func (bc *Chain) AddBlock(data string) {
 		return nil
 	})
 	//创建新区块
-	newBlock := NewBlock(data, preHash)
+	newBlock := NewBlock(txs, preHash)
 	//新区快写入数据库
 	bc.Db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(constants.BlocksBucket))
@@ -54,17 +52,17 @@ func (bc *Chain) AddBlock(data string) {
 }
 
 /**
-区块链
+	-区块链
 */
 type Chain struct {
-	Tip []byte
+	Tip []byte //最后一个区块的哈希
 	Db  *bolt.DB
 }
 
 /**
-创建区块链
+	创建区块链
 */
-func NewBlockChain(data string) *Chain {
+func NewBlockChain(transaction *Transaction) *Chain {
 	utils.CreateFile(constants.DbFile)
 	//打开数据库
 	var tip []byte
@@ -76,7 +74,7 @@ func NewBlockChain(data string) *Chain {
 		//不存在，创建表
 		if b == nil {
 			b, err := tx.CreateBucket([]byte(constants.BlocksBucket))
-			block := NewGenesisBlock(data)
+			block := NewGenesisBlock(transaction)
 			b.Put(block.Hash, Serialize(block))
 			b.Put(constants.LastHash, block.Hash)
 			tip = block.Hash

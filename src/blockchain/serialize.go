@@ -6,17 +6,17 @@ import (
 )
 
 /**
-序列化
+	序列化
 */
-func Serialize(block *Block) []byte {
+func Serialize(data interface{}) []byte {
 	var result bytes.Buffer
 	encoder := gob.NewEncoder(&result)
-	encoder.Encode(block)
+	encoder.Encode(data)
 	return result.Bytes()
 }
 
 /**
-反序列化
+	反序列化
 */
 func Deserialize(serialize []byte) *Block {
 	var block Block
