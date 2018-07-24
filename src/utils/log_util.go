@@ -7,3 +7,9 @@ func LogE(err error) {
 		fmt.Println(err)
 	}
 }
+
+func LogD(log string) {
+	if log != "" {
+		fmt.Println(log)
+	}
+}

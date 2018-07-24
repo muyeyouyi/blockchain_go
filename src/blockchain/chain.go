@@ -4,6 +4,7 @@ import (
 	"constants"
 	"utils"
 	"github.com/boltdb/bolt"
+	"encoding/hex"
 )
 
 /**
@@ -52,7 +53,7 @@ func (bc *Chain) AddBlock(txs []*Transaction) {
 }
 
 /**
-	-区块链
+	链
 */
 type Chain struct {
 	Tip []byte //最后一个区块的哈希
@@ -89,4 +90,95 @@ func NewBlockChain(transaction *Transaction) *Chain {
 
 	chain := Chain{tip, db}
 	return &chain
+}
+
+func (chain *Chain) FindUnspentTransactions(address string) []Transaction {
+	//utxo
+	var unspentTxs []Transaction
+	//已花费的out索引集合{{tXid1:[index1,index2]},{tXid2:[index1,index2]}}
+	spentOutputIndex := make(map[string][]int)
+
+	iterator := chain.Iterator()
+	//一层循环拿到区块
+	for {
+		block := iterator.Next()
+		//二层循环拿到区块中的tx
+		for _, tx := range block.Transactions {
+			txId := hex.EncodeToString(tx.Id)
+		Output:
+		//三层循环之一，拿到output
+			for outIndex, output := range tx.Outputs {
+				//找到对应in的数组，查找其中相同项
+				if spentOutputIndex[txId] != nil {
+					for _, vOut := range spentOutputIndex[txId] {
+						if vOut == outIndex {
+							continue Output
+						}
+					}
+				}
+				//未找到对应in，该out存到utxo
+				if output.CanBeUnlockedWith(address) {
+					unspentTxs = append(unspentTxs, *tx)
+				}
+
+			}
+			//三层循环之二，拿到input
+			if !tx.IsCoinBase() {
+				for _, input := range tx.Inputs {
+					//所有in的数据写到stx集合
+					if input.CanUnlockOutputWith(address) {
+						inTxId := hex.EncodeToString(input.TxId)
+						spentOutputIndex[inTxId] = append(spentOutputIndex[inTxId], input.OutIndex)
+					}
+				}
+			}
+
+		}
+
+		if len(iterator.CurrentHash) == 0 {
+			break
+		}
+	}
+	return unspentTxs
+}
+
+/**
+	找到对应地址utxo的集合
+ */
+func (chain *Chain) FindUTXOs(address string) []TxOutput {
+	var utxos []TxOutput
+	txs := chain.FindUnspentTransactions(address)
+	for _, tx := range txs {
+		for _, output := range tx.Outputs {
+			if output.CanBeUnlockedWith(address) {
+				utxos = append(utxos, output)
+			}
+		}
+	}
+	return utxos
+}
+
+/**
+	找到这一笔交易够用的output
+ */
+func (chain *Chain) FindSpendableOutputs(address string, amount int) (int, map[string][]int) {
+	var vaildOutputs = make(map[string][]int)
+	accumulated := 0
+	txs := chain.FindUnspentTransactions(address)
+
+Work:
+	for _, tx := range txs {
+		txId := hex.EncodeToString(tx.Id)
+		for index, output := range tx.Outputs {
+			if output.CanBeUnlockedWith(address) {
+				accumulated += output.ValueOut
+				vaildOutputs[txId] = append(vaildOutputs[txId], index)
+				if accumulated >= amount {
+					break Work
+				}
+			}
+		}
+	}
+	return accumulated, vaildOutputs
+
 }

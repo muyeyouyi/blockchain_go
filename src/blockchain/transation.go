@@ -32,6 +32,16 @@ type Transaction struct {
 }
 
 /**
+	判断挖矿交易
+ */
+func (transaction *Transaction) IsCoinBase() bool{
+	if transaction.Inputs[0].OutIndex == -1 {
+		return true
+	}
+	return false
+}
+
+/**
 	生成交易的ID
  */
 func (transaction *Transaction) setId() {
@@ -51,4 +61,18 @@ func NewCoinBaseTx (toAddress string) *Transaction{
 	tx := Transaction{nil,[]TxInput{inputs},[]TxOutput{outputs}}
 	tx.setId()
 	return &tx
+}
+
+/**
+	当前交易能否用该地址解锁
+ */
+func (in *TxInput)CanUnlockOutputWith(address string) bool{
+	return address == in.ScriptSig
+}
+
+/**
+	之前交易得到的币能否被该地址解锁
+ */
+func (out *TxOutput) CanBeUnlockedWith(address string) bool{
+	return out.ScriptSig == address
 }

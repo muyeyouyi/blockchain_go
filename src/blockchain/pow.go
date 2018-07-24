@@ -63,6 +63,9 @@ func (pow *ProofOfWork) Run() (int, []byte) {
 	return nonce, hash[:]
 }
 
+/**
+	挖矿后验证区块信息
+ */
 func (pow *ProofOfWork) Validate() bool {
 	var hashInt big.Int
 	nonce := pow.block.Nonce

@@ -2,8 +2,6 @@ package main
 
 import (
 	"blockchain"
-	"crypto/ecdsa"
-	"golang.org/x/crypto/ripemd160"
 )
 
 func main() {
@@ -15,10 +13,5 @@ func main() {
 		}
 	}()
 
-	ripemd160.New()
 
-}
-
-type name struct {
-	ecdsa.PublicKey
 }
