@@ -33,8 +33,6 @@ type Cli struct {
 	运行命令行
  */
 func (cli *Cli) Run() {
-	//cli.getBalance("1JEwzBHW5njfmp6AtxaBkMtyHMVdbuVdmj")
-	//return
 
 	//输出提示信息
 	cli.validateArgs()
@@ -88,7 +86,7 @@ func (cli *Cli) Run() {
 		if *sendFromData == "" || *sendToData == "" || *sendAmountData <= 0 {
 			os.Exit(1)
 		}
-		cli.addBlock(*sendFromData, *sendToData, *sendAmountData)
+		cli.send(*sendFromData, *sendToData, *sendAmountData)
 	}
 
 	//创建创世区块和链
@@ -161,7 +159,7 @@ func (cli *Cli) validateArgs() {
  */
 func (cli *Cli) printUsage() {
 	fmt.Println("用法：")
-	fmt.Println("    ", send, " -", from, " abc -", to, " xyz -", amount, " 30 （发送一笔交易）")
+	fmt.Println("    -from abc -to xyz -amount 30 （发送一笔交易）")
 	fmt.Println("    ", printChain, "                 (打印全部区块)")
 	fmt.Println("    ", createChain, " -", address, " dfz (生成创世区块)")
 	fmt.Println("    ", createWallet, "  (创建一个钱包)")
@@ -171,7 +169,7 @@ func (cli *Cli) printUsage() {
 /**
 	创建区块和交易
  */
-func (cli *Cli) addBlock(send, to string, amount int) {
+func (cli *Cli) send(send, to string, amount int) {
 	if cli.Chain == nil {
 		cli.linkDb()
 	}
