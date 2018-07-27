@@ -10,7 +10,7 @@ import (
  */
 type TxInput struct {
 	TxId      []byte //对应out所在tx的id值
-	OutIndex  int    //对应out所在tx的索引
+	outIndex  int    //对应out所在tx的索引
 	Signature []byte //签名字节数组
 	PubKey    []byte //公钥
 }

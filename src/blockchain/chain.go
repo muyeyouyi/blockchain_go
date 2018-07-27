@@ -5,6 +5,9 @@ import (
 	"utils"
 	"github.com/boltdb/bolt"
 	"encoding/hex"
+	"bytes"
+	"errors"
+	"crypto/ecdsa"
 )
 
 /**
@@ -26,6 +29,13 @@ func (bc *Chain) Iterator() *ChainIterator {
 区块链-增加区块
 */
 func (bc *Chain) AddBlock(txs []*Transaction) {
+	for _, tx := range txs {
+		if bc.VerifyTransaction(tx) != true {
+			utils.LogD("交易验证失败！")
+			return
+		}
+	}
+
 	//数据库查询最后区块哈希值
 	var preHash []byte
 	err := bc.Db.View(func(tx *bolt.Tx) error {
@@ -92,13 +102,13 @@ func NewBlockChain(transaction *Transaction) *Chain {
 	return &chain
 }
 
-func (chain *Chain) FindUnspentTransactions(pubKeyHash []byte) []Transaction {
+func (bc *Chain) FindUnspentTransactions(pubKeyHash []byte) []Transaction {
 	//utxo
 	var unspentTxs []Transaction
 	//已花费的out索引集合{{tXid1:[index1,index2]},{tXid2:[index1,index2]}}
 	spentOutputIndex := make(map[string][]int)
 
-	iterator := chain.Iterator()
+	iterator := bc.Iterator()
 	//一层循环拿到区块
 	for {
 		block := iterator.Next()
@@ -128,7 +138,7 @@ func (chain *Chain) FindUnspentTransactions(pubKeyHash []byte) []Transaction {
 					//所有in的数据写到stx集合
 					if input.CanUnlockOutputWith(pubKeyHash) {
 						inTxId := hex.EncodeToString(input.TxId)
-						spentOutputIndex[inTxId] = append(spentOutputIndex[inTxId], input.OutIndex)
+						spentOutputIndex[inTxId] = append(spentOutputIndex[inTxId], input.outIndex)
 					}
 				}
 			}
@@ -145,9 +155,9 @@ func (chain *Chain) FindUnspentTransactions(pubKeyHash []byte) []Transaction {
 /**
 	找到对应地址utxo的集合
  */
-func (chain *Chain) FindUTXOs(pubKeyHash []byte) []TxOutput {
+func (bc *Chain) FindUTXOs(pubKeyHash []byte) []TxOutput {
 	var utxos []TxOutput
-	txs := chain.FindUnspentTransactions(pubKeyHash)
+	txs := bc.FindUnspentTransactions(pubKeyHash)
 	for _, tx := range txs {
 		for _, output := range tx.Outputs {
 			if output.CanBeUnlockedWith(pubKeyHash) {
@@ -161,10 +171,10 @@ func (chain *Chain) FindUTXOs(pubKeyHash []byte) []TxOutput {
 /**
 	找到这一笔交易够用的output
  */
-func (chain *Chain) FindSpendableOutputs(pubKeyHash []byte, amount int) (int, map[string][]int) {
+func (bc *Chain) FindSpendableOutputs(pubKeyHash []byte, amount int) (int, map[string][]int) {
 	var vaildOutputs = make(map[string][]int)
 	accumulated := 0
-	txs := chain.FindUnspentTransactions(pubKeyHash)
+	txs := bc.FindUnspentTransactions(pubKeyHash)
 
 Work:
 	for _, tx := range txs {
@@ -181,4 +191,53 @@ Work:
 	}
 	return accumulated, vaildOutputs
 
+}
+
+/**
+	根据id在链上找到一笔交易
+ */
+func (bc *Chain) FindTransaction(ID []byte) (Transaction, error) {
+	iterator := bc.Iterator()
+	for{
+		block := iterator.Next()
+		for _, tx := range block.Transactions {
+			if bytes.Compare(ID,tx.Id) == 0 {
+				return *tx,nil
+			}
+		}
+
+
+		if len(block.PreBlockHash) == 0 {
+			break
+		}
+	}
+	return Transaction{},errors.New("没有找到这笔交易")
+}
+
+/**
+	对交易签名
+ */
+func (bc *Chain) SignTransaction(tx *Transaction, privateKey ecdsa.PrivateKey) {
+	preventTxs := make(map[string]Transaction)
+	for _, input := range tx.Inputs {
+		preTx, e := bc.FindTransaction(input.TxId)
+		utils.LogE(e)
+		preventTxs[hex.EncodeToString(preTx.Id)] = preTx
+	}
+	tx.Sign(privateKey,preventTxs)
+}
+
+/**
+	验证交易签名
+ */
+func (bc *Chain) VerifyTransaction(tx *Transaction) bool {
+	prevTXs := make(map[string]Transaction)
+
+	for _, vin := range tx.Inputs {
+		prevTX, err := bc.FindTransaction(vin.TxId)
+		prevTXs[hex.EncodeToString(prevTX.Id)] = prevTX
+		utils.LogE(err)
+	}
+
+	return tx.Verify(prevTXs)
 }

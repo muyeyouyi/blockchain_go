@@ -178,6 +178,7 @@ func (cli *Cli) send(send, to string, amount int) {
 		fmt.Println("错误：创世区块尚未创建")
 		cli.printUsage()
 	} else {
+		//coinBaseTx := NewCoinBaseTx(send)
 		tx := newUTXOTransaction(send, to, amount, cli.Chain)
 		if tx != nil {
 			cli.Chain.AddBlock([]*Transaction{tx})
@@ -258,6 +259,7 @@ func newUTXOTransaction(send, to string, amount int, chain *Chain) *Transaction 
 	//生成tx
 	tx := &Transaction{nil, inputs, outputs}
 	tx.setId()
+	chain.SignTransaction(tx, wlt.PrivateKey)
 
 	return tx
 }
