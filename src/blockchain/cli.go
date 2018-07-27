@@ -9,17 +9,20 @@ import (
 	"github.com/boltdb/bolt"
 	"strconv"
 	"encoding/hex"
+	"wallet"
 )
 
 const (
-	printChain  = "printchain"  //命令行 打印链表
-	createChain = "createchain" //命令行 新增区块
-	address     = "address"     //命令行 地址
-	from        = "from"        //命令行 币发送方
-	to          = "to"          //命令行 币接收方
-	send        = "send"        //命令行 转账
-	amount      = "amount"      //命令行 数量
-	getBalance  = "getbalance"  //命令行 查询余额
+	printChain   = "printchain"   //命令行 打印链表
+	createChain  = "createchain"  //命令行 新增区块
+	address      = "address"      //命令行 地址
+	from         = "from"         //命令行 币发送方
+	to           = "to"           //命令行 币接收方
+	send         = "send"         //命令行 转账
+	amount       = "amount"       //命令行 数量
+	getBalance   = "getbalance"   //命令行 查询余额
+	createWallet = "createwallet" //命令行 创建钱包
+	getWallets   = "getwallets"   //命令行 获取所有钱包地址
 )
 
 type Cli struct {
@@ -30,6 +33,8 @@ type Cli struct {
 	运行命令行
  */
 func (cli *Cli) Run() {
+	//cli.getBalance("1JEwzBHW5njfmp6AtxaBkMtyHMVdbuVdmj")
+	//return
 
 	//输出提示信息
 	cli.validateArgs()
@@ -37,6 +42,9 @@ func (cli *Cli) Run() {
 	//cmd创建链和创世区块
 	createChainCmd := flag.NewFlagSet(createChain, flag.ExitOnError)
 	createChainAddressData := createChainCmd.String(address, "", "在-address 后输入地址")
+
+	//打印钱包地址
+	getWalletsCmd := flag.NewFlagSet(getWallets,flag.ExitOnError)
 
 	//cmd创建链和创世区块
 	sendCmd := flag.NewFlagSet(send, flag.ExitOnError)
@@ -47,6 +55,9 @@ func (cli *Cli) Run() {
 	//cmd创建链和创世区块
 	getBalanceCmd := flag.NewFlagSet(getBalance, flag.ExitOnError)
 	getBalanceAddressData := getBalanceCmd.String(address, "", "在-address 后输入地址")
+
+	//cmd创建一个钱包
+	createWalletCmd := flag.NewFlagSet(createWallet, flag.ExitOnError)
 
 	//cmd打印链
 	printChainCmd := flag.NewFlagSet(printChain, flag.ExitOnError)
@@ -62,6 +73,10 @@ func (cli *Cli) Run() {
 		err = sendCmd.Parse(os.Args[2:])
 	case getBalance:
 		err = getBalanceCmd.Parse(os.Args[2:])
+	case createWallet:
+		err = createWalletCmd.Parse(os.Args[2:])
+	case getWallets:
+		err = getWalletsCmd.Parse(os.Args[2:])
 	default:
 		cli.printUsage()
 		os.Exit(1)
@@ -76,7 +91,7 @@ func (cli *Cli) Run() {
 		cli.addBlock(*sendFromData, *sendToData, *sendAmountData)
 	}
 
-	//获取创世区块的string 创建区块
+	//创建创世区块和链
 	if createChainCmd.Parsed() {
 		if *createChainAddressData == "" {
 			createChainCmd.Usage()
@@ -94,6 +109,17 @@ func (cli *Cli) Run() {
 		cli.getBalance(*getBalanceAddressData)
 	}
 
+	//创建钱包
+	if createWalletCmd.Parsed() {
+		cli.createWallet()
+	}
+
+	//打印所有钱包地址
+	if getWalletsCmd.Parsed() {
+		cli.printWallets()
+	}
+
+	//打印链
 	if printChainCmd.Parsed() {
 		cli.printChain()
 	}
@@ -135,9 +161,11 @@ func (cli *Cli) validateArgs() {
  */
 func (cli *Cli) printUsage() {
 	fmt.Println("用法：")
-	fmt.Println("    ", send, " -",from," abc -",to," xyz -",amount," 30 （发送一笔交易）")
+	fmt.Println("    ", send, " -", from, " abc -", to, " xyz -", amount, " 30 （发送一笔交易）")
 	fmt.Println("    ", printChain, "                 (打印全部区块)")
 	fmt.Println("    ", createChain, " -", address, " dfz (生成创世区块)")
+	fmt.Println("    ", createWallet, "  (创建一个钱包)")
+	fmt.Println("    ", getWallets, "  (打印全部钱包地址)")
 }
 
 /**
@@ -188,6 +216,7 @@ func (cli *Cli) printChain() {
 	创建区块链
  */
 func (cli *Cli) NewBlockChain(address string) {
+
 	tx := NewCoinBaseTx(address)
 	chain := NewBlockChain(tx)
 	cli.Chain = chain
@@ -197,28 +226,36 @@ func (cli *Cli) NewBlockChain(address string) {
 	创建一笔转账交易
  */
 func newUTXOTransaction(send, to string, amount int, chain *Chain) *Transaction {
-	count, validOutputs := chain.FindSpendableOutputs(send, amount)
+
+	var inputs []TxInput
+	var outputs []TxOutput
+
+	//获取钱包
+	wallets, err := wallet.NewWallets()
+	utils.LogE(err)
+	wlt := wallets.GetWallet(send)
+	pubKeyHash := wallet.HashPubKey(wlt.PublicKey)
+	//找到够用的utxo
+	count, validOutputs := chain.FindSpendableOutputs(pubKeyHash, amount)
+
 	if count < amount {
 		utils.LogD("余额不足，请重新确认")
 		return nil
 	}
-
-	var inputs []TxInput
-	var outputs []TxOutput
 
 	//创建input
 	for txId, outIndexs := range validOutputs {
 		decodeId, error := hex.DecodeString(txId)
 		utils.LogE(error)
 		for _, index := range outIndexs {
-			inputs = append(inputs,TxInput{decodeId,index,send})
+			inputs = append(inputs, TxInput{decodeId, index, nil, wlt.PublicKey})
 		}
 	}
 
 	//创建output
-	outputs = append(outputs,TxOutput{amount,to})
-	if	count > amount{
-		outputs = append(outputs,TxOutput{count-amount,send})
+	outputs = append(outputs, *NewTxOutput(amount, to))
+	if count > amount {
+		outputs = append(outputs, *NewTxOutput(count-amount, send))
 	}
 	//生成tx
 	tx := &Transaction{nil, inputs, outputs}
@@ -244,11 +281,35 @@ func (cli *Cli) getBalance(address string) {
 	}
 	balance := 0
 	if cli.Chain != nil {
+		wallets, _ := wallet.NewWallets()
+		wlt := wallets.GetWallet(address)
 
-		utxos := cli.Chain.FindUTXOs(address)
+		utxos := cli.Chain.FindUTXOs(wallet.HashPubKey(wlt.PublicKey))
 		for _, output := range utxos {
 			balance += output.ValueOut
 		}
 	}
 	fmt.Printf("Balance of '%s': %d\n", address, balance)
+}
+
+/**
+	创建一个钱包
+ */
+func (cli *Cli) createWallet() {
+	wallets, _ := wallet.NewWallets()
+	address := wallets.CreateWallet()
+	wallets.SaveToFile()
+	fmt.Printf("你的新地址: %s\n", address)
+}
+
+/**
+	打印全部钱包地址
+ */
+func (cli *Cli) printWallets() {
+	ws, e := wallet.NewWallets()
+	utils.LogE(e)
+	addresses := ws.GetAddresses()
+	for _, address := range addresses {
+		println("地址:"+address)
+	}
 }

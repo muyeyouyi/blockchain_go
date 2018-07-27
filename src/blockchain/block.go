@@ -4,6 +4,7 @@ import (
 	"time"
 	"bytes"
 	"crypto/sha256"
+	"constants"
 )
 
 /**
@@ -44,6 +45,18 @@ func NewBlock(txs []*Transaction, prevBlockHash []byte) *Block {
 	block.Nonce = nonce
 	return block
 }
+
+/**
+	创建挖矿交易
+ */
+func NewCoinBaseTx(toAddress string) *Transaction {
+	inputs := TxInput{[]byte{}, -1, []byte{},[]byte("创世区块！！")}
+	output := NewTxOutput(constants.Subsidy,toAddress)
+	tx := Transaction{nil, []TxInput{inputs}, []TxOutput{*output}}
+	tx.setId()
+	return &tx
+}
+
 
 /**
 创建创世区块

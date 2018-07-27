@@ -5,6 +5,10 @@ import (
 )
 
 func main() {
+	run()
+}
+
+func run() {
 	cli := &blockchain.Cli{}
 	cli.Run()
 	defer func() {
@@ -12,6 +16,4 @@ func main() {
 			cli.Chain.Db.Close()
 		}
 	}()
-
-
 }

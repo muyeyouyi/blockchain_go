@@ -11,17 +11,16 @@ import (
 
 const version = byte(0x00)
 const walletFile = "wallet.dat"
-const addressChecksumLen = 4
+const AddressChecksumLen = 4
 
 type Wallet struct {
 	PrivateKey ecdsa.PrivateKey
 	PublicKey  []byte
 }
 
-type Wallets struct {
-	Wallets map[string]*Wallet
-}
-
+/**
+	创建一个新钱包
+ */
 func NewWallet() *Wallet {
 	privateKey, publicKey := newKeyPair()
 	return &Wallet{privateKey, publicKey}
@@ -41,30 +40,39 @@ func newKeyPair() (ecdsa.PrivateKey, []byte) {
 /**
 	公钥生成地址
  */
-func (wallet Wallet) GetAddress() []byte {
-	pubKeyHash := hashPubKey(wallet.PublicKey)
+func (wallet *Wallet) GetAddress() []byte {
+	pubKeyHash := HashPubKey(wallet.PublicKey)
 	checkSum := checkSum(pubKeyHash)
 	fullAddressData := append([]byte{version}, pubKeyHash...)
-	fullAddressData = append(fullAddressData, checkSum...)
+	fullAddressData = append(fullAddressData, checkSum[:AddressChecksumLen]...)
 	return utils.Base58Encode(fullAddressData)
 }
 
 
 func checkSum(pubKeyHash []byte) []byte {
-	doubleHash := sha256.Sum256(sha256.Sum256(pubKeyHash)[:])
+	singleHash := sha256.Sum256(pubKeyHash)
+	doubleHash := sha256.Sum256(singleHash[:])
 	return doubleHash[:4]
 }
 
 /**
 	对公钥两次哈希
  */
-func hashPubKey(pubKey []byte) []byte {
+func HashPubKey(pubKey []byte) []byte {
 	publicSHA256 := sha256.Sum256(pubKey)
 
 	RIPEMD160Hasher := ripemd160.New()
 	_, err := RIPEMD160Hasher.Write(publicSHA256[:])
 	publicRIPEMD160 := RIPEMD160Hasher.Sum(nil)
-
 	utils.LogE(err)
+
 	return publicRIPEMD160
+}
+
+/**
+	地址转换公钥哈希
+ */
+func AddressToPubKeyHash(address string) []byte {
+	full := utils.Base58Decode([]byte(address))
+	return full[1:len(full)-AddressChecksumLen]
 }

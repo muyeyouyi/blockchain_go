@@ -92,7 +92,7 @@ func NewBlockChain(transaction *Transaction) *Chain {
 	return &chain
 }
 
-func (chain *Chain) FindUnspentTransactions(address string) []Transaction {
+func (chain *Chain) FindUnspentTransactions(pubKeyHash []byte) []Transaction {
 	//utxo
 	var unspentTxs []Transaction
 	//已花费的out索引集合{{tXid1:[index1,index2]},{tXid2:[index1,index2]}}
@@ -117,7 +117,7 @@ func (chain *Chain) FindUnspentTransactions(address string) []Transaction {
 					}
 				}
 				//未找到对应in，该out存到utxo
-				if output.CanBeUnlockedWith(address) {
+				if output.CanBeUnlockedWith(pubKeyHash) {
 					unspentTxs = append(unspentTxs, *tx)
 				}
 
@@ -126,7 +126,7 @@ func (chain *Chain) FindUnspentTransactions(address string) []Transaction {
 			if !tx.IsCoinBase() {
 				for _, input := range tx.Inputs {
 					//所有in的数据写到stx集合
-					if input.CanUnlockOutputWith(address) {
+					if input.CanUnlockOutputWith(pubKeyHash) {
 						inTxId := hex.EncodeToString(input.TxId)
 						spentOutputIndex[inTxId] = append(spentOutputIndex[inTxId], input.OutIndex)
 					}
@@ -145,12 +145,12 @@ func (chain *Chain) FindUnspentTransactions(address string) []Transaction {
 /**
 	找到对应地址utxo的集合
  */
-func (chain *Chain) FindUTXOs(address string) []TxOutput {
+func (chain *Chain) FindUTXOs(pubKeyHash []byte) []TxOutput {
 	var utxos []TxOutput
-	txs := chain.FindUnspentTransactions(address)
+	txs := chain.FindUnspentTransactions(pubKeyHash)
 	for _, tx := range txs {
 		for _, output := range tx.Outputs {
-			if output.CanBeUnlockedWith(address) {
+			if output.CanBeUnlockedWith(pubKeyHash) {
 				utxos = append(utxos, output)
 			}
 		}
@@ -161,16 +161,16 @@ func (chain *Chain) FindUTXOs(address string) []TxOutput {
 /**
 	找到这一笔交易够用的output
  */
-func (chain *Chain) FindSpendableOutputs(address string, amount int) (int, map[string][]int) {
+func (chain *Chain) FindSpendableOutputs(pubKeyHash []byte, amount int) (int, map[string][]int) {
 	var vaildOutputs = make(map[string][]int)
 	accumulated := 0
-	txs := chain.FindUnspentTransactions(address)
+	txs := chain.FindUnspentTransactions(pubKeyHash)
 
 Work:
 	for _, tx := range txs {
 		txId := hex.EncodeToString(tx.Id)
 		for index, output := range tx.Outputs {
-			if output.CanBeUnlockedWith(address) {
+			if output.CanBeUnlockedWith(pubKeyHash) {
 				accumulated += output.ValueOut
 				vaildOutputs[txId] = append(vaildOutputs[txId], index)
 				if accumulated >= amount {
